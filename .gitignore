@@ -1,0 +1,40 @@
+# 全体共通
+__pycache__/
+*.py[cod]
+*.pyo
+*.log
+*.tmp
+*.DS_Store
+
+# Jupyter Notebook 一時ディレクトリ
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+notebook/
+
+# 仮想環境
+venv/
+
+# VSCode 設定
+.vscode/
+
+# lzh / txt ファイルの実体のみ除外（フォルダは含める）
+data/data_master/lzh_*/**/*
+!data/data_master/lzh_*/
+
+data/data_master/txt_*/**/*
+!data/data_master/txt_*/
+
+# CSVなどの生成物
+data/data_master/payout_csv/*.csv
+data/data_master/personal_csv/*.csv
+data/data_master/result_csv/*.csv
+data/data_master/rating_csv/rating.csv
+
+# モデルファイル
+models_clf/*.joblib
+models_rank/
+
+# 予測結果
+predictions/clf/pred_result/*.csv
+predictions/clf/*.csv
+predictions/rank/
