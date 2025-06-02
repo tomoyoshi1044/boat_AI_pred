@@ -1,88 +1,109 @@
 import os
-import re
+import argparse
+import datetime
 import requests
-import time
 import pandas as pd
-from datetime import datetime, timedelta
+from pathlib import Path
+from tqdm import tqdm
+from bs4 import BeautifulSoup
+from io import StringIO
 
-# プロジェクトルートを定義（このファイルの2階層上）
-project_root = os.path.dirname(os.path.dirname(__file__))
+# 保存先ディレクトリ
+ROOT_DIR = Path(__file__).resolve().parents[1]
+TXT_B_DIR = ROOT_DIR / "data" / "data_master" / "txt_B"
+TXT_R_DIR = ROOT_DIR / "data" / "data_master" / "txt_R"
+RESULT_DIR = ROOT_DIR / "data" / "data_master" / "csv_result"
 
-# 各種ディレクトリ
-TXT_FILE_DIR_B = os.path.join(project_root, 'data', 'data_master', 'txt_B')
-TXT_FILE_DIR_R = os.path.join(project_root, 'data', 'data_master', 'txt_R')
-RESULT_CSV_PATH = os.path.join(project_root, 'artifacts', 'result.csv')
+for d in [TXT_B_DIR, TXT_R_DIR, RESULT_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
 
-# 保存先のディレクトリ作成
-os.makedirs(TXT_FILE_DIR_B, exist_ok=True)
-os.makedirs(TXT_FILE_DIR_R, exist_ok=True)
-os.makedirs(os.path.dirname(RESULT_CSV_PATH), exist_ok=True)
 
-def download_text_files(days=1):
-    """指定日数分のレース結果テキスト（B/R）をダウンロードして保存"""
-    today = datetime.today()
-    for i in range(days):
-        target_date = today - timedelta(days=i+1)
-        ymd = target_date.strftime('%Y%m%d')
+def download_file(url, filepath, code):
+    try:
+        res = requests.get(url, timeout=10)
+        if res.status_code == 200:
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(res.text)
+            print(f'{code}ファイル保存成功: {filepath}')
+        else:
+            print(f'{code}ファイル保存失敗: ステータスコード {res.status_code} - {url}')
+    except Exception as e:
+        print(f'{code}ファイル保存失敗: {e} - {url}')
 
-        for code in ['B', 'R']:
-            url = f'https://www.boatrace.jp/owpc/pc/race/download?hd={ymd}&type={code}'
-            try:
-                res = requests.get(url)
-                if res.status_code == 200 and len(res.content) > 1000:
-                    filepath = os.path.join(TXT_FILE_DIR_B if code == 'B' else TXT_FILE_DIR_R, f'{ymd}_{code}.txt')
-                    with open(filepath, 'wb') as f:
-                        f.write(res.content)
-                    print(f'{code}ファイル保存成功: {filepath}')
-                else:
-                    print(f'{code}ファイルなしまたはデータ不十分: {ymd}')
-            except Exception as e:
-                print(f'エラー({code}): {e}')
-        time.sleep(1)  # サーバー負荷軽減のため
 
-def convert_texts_to_csv():
-    """保存されたテキストファイルからレース結果CSVを作成"""
-    txt_file_list_B = sorted(os.listdir(TXT_FILE_DIR_B))
-    txt_file_list_R = sorted(os.listdir(TXT_FILE_DIR_R))
-    df_mix = []
+def parse_result(html):
+    soup = BeautifulSoup(html, "html.parser")
+    try:
+        race_number = soup.select_one(".numberSet1_row").text.strip()
+        table = soup.select_one(".table1")
+        if table is None:
+            return None
+        df = pd.read_html(StringIO(str(table)))[0]
+        df["レース"] = race_number
+        return df
+    except Exception:
+        return None
 
-    for r_file, b_file in zip(txt_file_list_R, txt_file_list_B):
-        try:
-            with open(os.path.join(TXT_FILE_DIR_R, r_file), encoding='shift-jis', errors='ignore') as f:
-                dataR = f.read().split('KBGN')[1:]
 
-            with open(os.path.join(TXT_FILE_DIR_B, b_file), encoding='shift-jis', errors='ignore') as f:
-                dataB = f.read().split('BBGN')[1:]
+def main(days):
+    today = datetime.date.today()
 
-            for r, b in zip(dataR[1:], dataB[1:]):
+    all_result_dfs = []
+
+    for delta in range(days):
+        target_date = today - datetime.timedelta(days=delta)
+        date_str = target_date.strftime("%Y%m%d")
+
+        for jcd in range(1, 25):  # 1〜24場
+            jcd_str = f"{jcd:02}"
+            for rno in range(1, 13):  # 各場12Rまで
+                rno_str = f"{rno:02}"
+
+                # ファイル保存パス
+                b_filepath = TXT_B_DIR / f"{date_str}_B.txt"
+                r_filepath = TXT_R_DIR / f"{date_str}_R.txt"
+
+                # URL
+                url_b = f"https://www.boatrace.jp/owpc/pc/race/beforeinfo?rno={rno_str}&jcd={jcd_str}&hd={date_str}"
+                url_r = f"https://www.boatrace.jp/owpc/pc/race/raceresult?rno={rno_str}&jcd={jcd_str}&hd={date_str}"
+
+                # ファイルがまだ存在しない場合のみダウンロード
+                if not b_filepath.exists():
+                    download_file(url_b, b_filepath, "B")
+
+                if not r_filepath.exists():
+                    download_file(url_r, r_filepath, "R")
+
+                # 結果HTMLをパースして結果DataFrameに追加
                 try:
-                    rrr = r.split('\n')
-
-                    # 結果データ
-                    results = [row.replace('\u3000','').replace('\n','') for row in rrr if re.match('^\s+[0]+[0-6]|\s+[A-Z]', row)]
-                    pattern2 = '^(\s+[0][0-6]|\s+[A-Z][0-6]|\s+[A-Z])(\s+[0-6])(\s+\d{4})([^0-9]+\s)(\d+)(\s+\d+)'\
-                               '(\s+\d{1}.\d{2}|\s+\D{1})(\s+[1-6]|\s+\D{1}|\s+)(\s+[0].[0-9]{2}|\s+\D{1})'
-                    valueR = [re.match(re.compile(pattern2), result).groups() for result in results if re.match(pattern2, result)]
-
-                    # 日付取得
-                    date = r_file[:8]
-
-                    for p in valueR:
-                        df_mix.append([date] + list(p))
-
+                    res = requests.get(url_r, timeout=10)
+                    if res.status_code == 200:
+                        df = parse_result(res.text)
+                        if df is not None:
+                            df["場コード"] = jcd_str
+                            df["日付"] = date_str
+                            df["レース番号"] = rno
+                            all_result_dfs.append(df)
+                        else:
+                            print(f"レース結果なし: {date_str} {jcd_str}-{rno_str}")
+                    else:
+                        print(f"結果取得失敗: ステータスコード {res.status_code} - {url_r}")
                 except Exception as e:
-                    print(f"サブデータ処理エラー: {e}")
-        except Exception as e:
-            print(f"ファイル読み込みエラー: {e}")
+                    print(f"結果取得エラー: {e} - {url_r}")
 
-    # CSVとして保存（アーティファクトに）
-    if df_mix:
-        df_result = pd.DataFrame(df_mix)
-        df_result.to_csv(RESULT_CSV_PATH, index=False)
-        print(f'レース結果CSVを保存しました: {RESULT_CSV_PATH}')
+    # 結果を保存
+    if all_result_dfs:
+        df_result = pd.concat(all_result_dfs, ignore_index=True)
+        result_path = RESULT_DIR / f"{today.strftime('%Y%m%d')}_result.csv"
+        df_result.to_csv(result_path, index=False, encoding="utf-8-sig")
+        print(f"レース結果CSV保存成功: {result_path}")
     else:
-        print('有効なレース結果データがありませんでした')
+        print("有効なレース結果データがありませんでした")
+
 
 if __name__ == "__main__":
-    download_text_files(days=1)  # 直近1日分を対象
-    convert_texts_to_csv()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--days", type=int, default=1, help="過去何日分を取得するか（デフォルト: 1日）")
+    args = parser.parse_args()
+    main(args.days)
+
