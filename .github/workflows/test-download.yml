@@ -23,7 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas requests
+          pip install pandas requests tqdm
+
 
       - name: Run download_and_convert.py
         run: python scripts/download_and_convert.py
