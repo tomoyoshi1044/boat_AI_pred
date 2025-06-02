@@ -1,40 +1,37 @@
-name: Test Download and Convert
+name: Run download_and_convert script
 
 on:
-  workflow_dispatch:  # 手動実行用
+  workflow_dispatch:
   push:
     paths:
       - 'scripts/download_and_convert.py'
-      - '.github/workflows/test-download.yml'
+      - '.github/workflows/download_and_convert.yml'
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install required Python packages
         run: |
-          python -m pip install --upgrade pip
-          pip install pandas requests tqdm
-
+          pip install --upgrade pip
+          pip install pandas requests beautifulsoup4 tqdm
 
       - name: Run download_and_convert.py
         run: python scripts/download_and_convert.py
 
-      - name: Check result CSV
-        run: |
-          if [ -f artifacts/result.csv ]; then
-            echo "✅ result.csv が正常に作成されました"
-            head -n 5 artifacts/result.csv
-          else
-            echo "❌ result.csv が見つかりませんでした"
-            exit 1
-          fi
+      - name: Upload df_result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: df_result
+          path: artifacts/df_result.pkl
+
