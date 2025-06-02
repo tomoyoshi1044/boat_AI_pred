@@ -14,10 +14,9 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: 3.10
 
       - name: Install dependencies
-        working-directory: boat_AI_app
         run: |
           pip install --upgrade pip
           pip install requests
@@ -30,15 +29,12 @@ jobs:
           pip install lxml
 
       - name: Run download.py
-        working-directory: boat_AI_app
         run: python data/download.py
 
       - name: Run model creation
-        working-directory: boat_AI_app
         run: python models_clf/make_model_clf.py
 
       - name: Run update.py
-        working-directory: boat_AI_app
         run: python update.py
 
 
