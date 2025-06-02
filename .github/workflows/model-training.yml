@@ -1,4 +1,4 @@
-name: boat_AI_pred Workflow
+name: Run Boat AI Pipeline
 
 on:
   workflow_dispatch:
@@ -8,19 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.10
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pandas xgboost scikit-learn joblib requests
+      - name: Upgrade pip
+        run: pip install --upgrade pip
 
-    - name: Run update.py
-      run: python update.py
+      - name: Install required Python packages
+        run: |
+          pip install requests
+          pip install lhafile
+          pip install pandas
+          pip install numpy
+          pip install scikit-learn
+          pip install tqdm
+          pip install beautifulsoup4
+          pip install lxml
+
+      - name: Run download script
+        run: python boat_AI_pred/data/download.py
+
+      - name: Run model training script
+        run: python boat_AI_pred/models_clf/make_model_clf.py
+
+      - name: Run main update script
+        run: python boat_AI_pred/update.py
+
 
