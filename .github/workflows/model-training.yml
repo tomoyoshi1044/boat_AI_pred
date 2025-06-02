@@ -20,7 +20,14 @@ jobs:
         working-directory: boat_AI_app
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install requests
+          pip install lhafile
+          pip install pandas
+          pip install numpy
+          pip install scikit-learn
+          pip install tqdm
+          pip install beautifulsoup4
+          pip install lxml
 
       - name: Run download.py
         working-directory: boat_AI_app
