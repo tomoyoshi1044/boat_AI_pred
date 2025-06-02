@@ -31,12 +31,16 @@ jobs:
           pip install lxml
 
       - name: Run download script
-        run: python boat_AI_pred/data/download.py
+        working-directory: boat_AI_pred
+        run: python data/download.py
 
       - name: Run model training script
-        run: python boat_AI_pred/models_clf/make_model_clf.py
+        working-directory: boat_AI_pred
+        run: python models_clf/make_model_clf.py
 
       - name: Run main update script
-        run: python boat_AI_pred/update.py
+        working-directory: boat_AI_pred
+        run: python update.py
+
 
 
