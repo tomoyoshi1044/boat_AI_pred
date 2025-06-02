@@ -11,9 +11,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set working directory
-        run: echo "Setting working directory to boat_AI_pred"
-
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
@@ -34,16 +31,13 @@ jobs:
           pip install lxml
 
       - name: Run download script
-        working-directory: ./boat_AI_pred
-        run: python data/download.py
+        run: python boat_AI_pred/data/download.py
 
       - name: Run model training script
-        working-directory: ./boat_AI_pred
-        run: python models_clf/make_model_clf.py
+        run: python boat_AI_pred/models_clf/make_model_clf.py
 
       - name: Run main update script
-        working-directory: ./boat_AI_pred
-        run: python update.py
+        run: python boat_AI_pred/update.py
 
 
 
