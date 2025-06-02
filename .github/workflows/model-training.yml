@@ -16,28 +16,24 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Upgrade pip
-        run: pip install --upgrade pip
-
-      - name: Install required Python packages
+      - name: Install dependencies
+        working-directory: boat_AI_app
         run: |
-          pip install requests
-          pip install lhafile
-          pip install pandas
-          pip install numpy
-          pip install scikit-learn
-          pip install tqdm
-          pip install beautifulsoup4
-          pip install lxml
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run download script
-        run: python boat_AI_pred/data/download.py
+      - name: Run download.py
+        working-directory: boat_AI_app
+        run: python data/download.py
 
-      - name: Run model training script
-        run: python boat_AI_pred/models_clf/make_model_clf.py
+      - name: Run model creation
+        working-directory: boat_AI_app
+        run: python models_clf/make_model_clf.py
 
-      - name: Run main update script
-        run: python boat_AI_pred/update.py
+      - name: Run update.py
+        working-directory: boat_AI_app
+        run: python update.py
+
 
 
 
