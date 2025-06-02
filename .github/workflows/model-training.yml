@@ -22,16 +22,17 @@ jobs:
           pip install requests lhafile pandas numpy scikit-learn tqdm beautifulsoup4 lxml xgboost
 
       - name: Run download.py
-        working-directory: ./boat_AI_pred
+        working-directory: ./boat_AI_app
         run: python data/download.py
 
       - name: Run model creation
-        working-directory: ./boat_AI_pred
+        working-directory: ./boat_AI_app
         run: python models_clf/make_model_clf.py
 
       - name: Run update.py
-        working-directory: ./boat_AI_pred
+        working-directory: ./boat_AI_app
         run: python update.py
+
 
 
 
