@@ -19,24 +19,20 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install requests
-          pip install lhafile
-          pip install pandas
-          pip install numpy
-          pip install scikit-learn
-          pip install tqdm
-          pip install beautifulsoup4
-          pip install lxml
-          pip install xgboost
+          pip install requests lhafile pandas numpy scikit-learn tqdm beautifulsoup4 lxml xgboost
 
       - name: Run download.py
+        working-directory: ./boat_AI_pred
         run: python data/download.py
 
       - name: Run model creation
+        working-directory: ./boat_AI_pred
         run: python models_clf/make_model_clf.py
 
       - name: Run update.py
+        working-directory: ./boat_AI_pred
         run: python update.py
+
 
 
 
